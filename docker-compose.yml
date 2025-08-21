@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: rma-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  db-init:
+    image: postgres:16
+    container_name: rma-db-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: root
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    entrypoint: [ "bash", "-lc" ]
+    command: >
+      '
+      set -e;
+      DBHOST=postgres;
+      DBCMD="psql -h ${DBHOST} -U postgres -d postgres -tAc";
+      for DB in "usr_mgmt_db" "resource_allocation_db" "master_service_db" "project_sow_db" "user_mgmt"; do
+        if [ "$(${DBCMD} "SELECT 1 FROM pg_database WHERE datname=''$DB''")" != "1" ]; then
+          psql -h ${DBHOST} -U postgres -d postgres -c "CREATE DATABASE \\"$DB\\"";
+        fi;
+      done
+      '
+    restart: "no"
+
+  app:
+    image: rma-one:v1   # Build this image first: docker build -t rma-one:v1 .
+    container_name: rma-one
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    ports:
+      - "80:80"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      USER_MGMT_DB: usr_mgmt_db
+      RESOURCE_ALLOCATION_DB: resource_allocation_db
+      MASTER_SERVICE_DB: master_service_db
+      PROJECT_SOW_DB: project_sow_db
+      API_GATEWAY_DB: user_mgmt
+      JWT_SECRET: change-me-please
+      SERVICE_LIST: "eureka-server config-server api-gateway resource-allocation-service master-resource-service project-sow-service reporting-integration-service user-mgmt-service"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rma-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
