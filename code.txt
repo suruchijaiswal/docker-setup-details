@@ -1,3 +1,32 @@
+
+
+What you can do now:
+
+Access your app
+👉 http://localhost:80
+
+Access pgAdmin
+👉 http://localhost:5050
+
+Email: admin@admin.com
+
+Password: admin
+
+Connect pgAdmin to your Postgres container
+
+Open pgAdmin → Add New Server
+
+General Tab → Name: RMA Database
+
+Connection Tab:
+
+Host: rma-postgres
+
+Port: 5432
+
+Username: postgres
+
+
 App (React via Nginx): http://localhost/
 
 Eureka dashboard: http://localhost:8761

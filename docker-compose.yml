@@ -28,7 +28,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
     entrypoint: ["bash", "-lc"]
-    # NOTE: use $$ to escape $ so Compose doesn’t try to expand on the host
+    # NOTE: $$ escapes $ so expansion happens INSIDE the container, not by Compose
     command: |-
       set -e
       DBHOST=postgres
@@ -41,7 +41,7 @@ services:
     restart: "no"
 
   app:
-    image: rma-one:v1     # build this image first: docker build -t rma-one:v1 .
+    image: rma-one:v1          # build this image first: docker build -t rma-one:v1 .
     container_name: rma-one
     restart: unless-stopped
     depends_on:
@@ -50,7 +50,8 @@ services:
       db-init:
         condition: service_completed_successfully
     ports:
-      - "80:80"
+      - "80:80"                # Nginx inside the single image
+      - "8080:80"
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -65,14 +66,14 @@ services:
       SERVICE_LIST: "eureka-server config-server api-gateway resource-allocation-service master-resource-service project-sow-service reporting-integration-service user-mgmt-service"
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     container_name: rma-pgadmin
     restart: unless-stopped
-    ports:
-      - "5050:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
     depends_on:
       postgres:
         condition: service_healthy
