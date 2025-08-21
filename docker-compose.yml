@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
@@ -29,22 +27,21 @@ services:
       PGPASSWORD: root
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
-    entrypoint: [ "bash", "-lc" ]
-    command: >
-      '
-      set -e;
-      DBHOST=postgres;
-      DBCMD="psql -h ${DBHOST} -U postgres -d postgres -tAc";
+    entrypoint: ["bash", "-lc"]
+    # NOTE: use $$ to escape $ so Compose doesn’t try to expand on the host
+    command: |-
+      set -e
+      DBHOST=postgres
+      DBCMD='psql -h '"$DBHOST"' -U postgres -d postgres -tAc'
       for DB in "usr_mgmt_db" "resource_allocation_db" "master_service_db" "project_sow_db" "user_mgmt"; do
-        if [ "$(${DBCMD} "SELECT 1 FROM pg_database WHERE datname=''$DB''")" != "1" ]; then
-          psql -h ${DBHOST} -U postgres -d postgres -c "CREATE DATABASE \\"$DB\\"";
-        fi;
+        if [ "$($$DBCMD "SELECT 1 FROM pg_database WHERE datname=''"$$DB''"")" != "1" ]; then
+          psql -h $$DBHOST -U postgres -d postgres -c "CREATE DATABASE \"$$DB\""
+        fi
       done
-      '
     restart: "no"
 
   app:
-    image: rma-one:v1   # Build this image first: docker build -t rma-one:v1 .
+    image: rma-one:v1     # build this image first: docker build -t rma-one:v1 .
     container_name: rma-one
     restart: unless-stopped
     depends_on:
@@ -64,7 +61,7 @@ services:
       MASTER_SERVICE_DB: master_service_db
       PROJECT_SOW_DB: project_sow_db
       API_GATEWAY_DB: user_mgmt
-      JWT_SECRET: change-me-please
+      JWT_SECRET: qXjYpZmVcDbWnFkLgHsIrOtUeQxSzAaBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789+/ABCDEF
       SERVICE_LIST: "eureka-server config-server api-gateway resource-allocation-service master-resource-service project-sow-service reporting-integration-service user-mgmt-service"
 
   pgadmin:

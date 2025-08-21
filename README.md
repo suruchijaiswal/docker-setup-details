@@ -1,18 +1,26 @@
-# docker-setup (single image)
-Builds one image that runs all microservices + two React UIs under nginx.
+# RMA – Single Image + Postgres + pgAdmin
 
-## Put these four zips beside this Dockerfile before building
-- rma_java_microservices.zip
-- api-gateway-main.zip
-- rma_react_frontend-main.zip
-- rms_react_frontend-main.zip
+This setup builds **one Docker image** that runs all Spring Boot services and the RMA React UI behind Nginx, with Postgres and pgAdmin managed by Docker Compose.
 
-## Build
-docker build -t rma-one:v2 .
+## Files
+- Dockerfile — multi-stage build (JARs + React) → single runtime image
+- entrypoint.sh — starts Nginx and all services via Supervisor
+- nginx.conf — serves `/` and proxies `/api/*` to the gateway
+- docker-compose.yml — runs Postgres + db-init + app + pgAdmin
 
-## Run (needs Postgres reachable at POSTGRES_HOST:POSTGRES_PORT)
-docker run --rm -p 80:80 --env-file .env rma-one:v2
+## 1) Put source zips next to the Dockerfile
+- `rma_java_microservices.zip`
+- `api-gateway-main.zip`
+- `rma_react_frontend-main.zip`
 
-## Azure App Service
-Push image to a registry and set app settings:
-WEBSITES_PORT=80 and the DB/JWT vars from .env
+## 2) Build the single image
+```bash
+docker build -t rma-one:v1 .
+docker compose up -d
+docker compose ps
+docker compose logs -f app
+
+remove 
+docker rm -f rma-postgres
+
+

@@ -24,6 +24,7 @@ for NAME in ${SERVICE_LIST}; do
     echo "WARNING: No JAR found for ${NAME}"
     continue
   fi
+
   SAFE="$(sanitize "${NAME}")"
   VAR="JAVA_OPTS__${SAFE}"
   SERVICE_JAVA_OPTS="${!VAR:-$JAVA_OPTS}"
@@ -42,25 +43,25 @@ for NAME in ${SERVICE_LIST}; do
 
   DBNAME=""
   case "${NAME}" in
-    user-mgmt-service) DBNAME="${USER_MGMT_DB}" ;;
-    project-sow-service) DBNAME="${PROJECT_SOW_DB}" ;;
-    resource-allocation-service) DBNAME="${RESOURCE_ALLOCATION_DB}" ;;
-    master-resource-service) DBNAME="${MASTER_SERVICE_DB}" ;;
-    api-gateway) DBNAME="${API_GATEWAY_DB}" ;;
+    user-mgmt-service) DBNAME="${USER_MGMT_DB:-}" ;;
+    project-sow-service) DBNAME="${PROJECT_SOW_DB:-}" ;;
+    resource-allocation-service) DBNAME="${RESOURCE_ALLOCATION_DB:-}" ;;
+    master-resource-service) DBNAME="${MASTER_SERVICE_DB:-}" ;;
+    api-gateway) DBNAME="${API_GATEWAY_DB:-}" ;;
   esac
 
   {
     echo "[program:${NAME}]"
     if [[ -n "${DBNAME}" ]]; then
-      echo "command=/bin/bash -lc 'exec env SERVER_PORT=${PORT} SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${DBNAME} java ${SERVICE_JAVA_OPTS} -jar "${JAR_PATH}"'"
+      echo "command=/bin/bash -lc 'exec env SERVER_PORT=${PORT} SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${DBNAME} java ${SERVICE_JAVA_OPTS} -jar \"${JAR_PATH}\"'"
     else
-      echo "command=/bin/bash -lc 'exec env SERVER_PORT=${PORT} java ${SERVICE_JAVA_OPTS} -jar "${JAR_PATH}"'"
+      echo "command=/bin/bash -lc 'exec env SERVER_PORT=${PORT} java ${SERVICE_JAVA_OPTS} -jar \"${JAR_PATH}\"'"
     fi
     echo "directory=/app/services"
     echo "autorestart=true"
     echo "stdout_logfile=/var/log/supervisor/${NAME}.stdout.log"
     echo "stderr_logfile=/var/log/supervisor/${NAME}.stderr.log"
-    echo "environment=POSTGRES_HOST="${POSTGRES_HOST}",POSTGRES_PORT="${POSTGRES_PORT}",POSTGRES_USER="${POSTGRES_USER}",POSTGRES_PASSWORD="${POSTGRES_PASSWORD}",JWT_SECRET="${JWT_SECRET}",APP_JWT_SECRET="${JWT_SECRET}",EUREKA_CLIENT_SERVICEURL_DEFAULTZONE="http://localhost:8761/eureka/""
+    echo "environment=POSTGRES_HOST=\"${POSTGRES_HOST}\",POSTGRES_PORT=\"${POSTGRES_PORT}\",POSTGRES_USER=\"${POSTGRES_USER}\",POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\",JWT_SECRET=\"${JWT_SECRET}\",APP_JWT_SECRET=\"${JWT_SECRET}\",EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=\"http://localhost:8761/eureka/\""
     echo
   } >> "${SUP_CONF_DIR}/services.conf"
 done
