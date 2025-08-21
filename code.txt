@@ -1,0 +1,30 @@
+App (React via Nginx): http://localhost/
+
+Eureka dashboard: http://localhost:8761
+ (services should register after a minute)
+
+pgAdmin: http://localhost:5050
+
+Login: admin@admin.com / admin
+Add server: Host: rma-postgres, User: postgres, Password: root
+Check DBs exist: usr_mgmt_db, resource_allocation_db, master_service_db, project_sow_db, user_mgmt.
+
+Gateway health (from host)
+curl -i http://localhost/api/actuator/health
+
+# gateway
+curl -sS http://127.0.0.1:8080/actuator/health
+
+# typical microservice ports (adjust if yours differ)
+curl -sS http://127.0.0.1:8081/actuator/health  # user-mgmt
+curl -sS http://127.0.0.1:8082/actuator/health  # project-sow
+curl -sS http://127.0.0.1:8083/actuator/health  # resource-allocation
+curl -sS http://127.0.0.1:8084/actuator/health  # reporting-integration
+curl -sS http://127.0.0.1:8085/actuator/health  # master-resource
+curl -sS http://127.0.0.1:8761/                # eureka HTML
+exit
+
+$body = '{"username":"admin","password":"admin"}'
+curl -i -H "Content-Type: application/json" -d $body http://localhost/api/auth/login
+$TOKEN="<paste-jwt-here>"
+curl -i -H "Authorization: Bearer $TOKEN" http://localhost/api/users/me
